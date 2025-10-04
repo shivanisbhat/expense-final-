@@ -1,0 +1,149 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// schema.prisma
+model Company {
+  id            String   @id @default(uuid())
+  name          String
+  country       String
+  currency      String   @default("USD")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  users         User[]
+  expenses      Expense[]
+  approvalRules ApprovalRule[]
+}
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  EMPLOYEE
+}
+
+model User {
+  id          String   @id @default(uuid())
+  email       String   @unique
+  password    String
+  firstName   String
+  lastName    String
+  role        UserRole @default(EMPLOYEE)
+  companyId   String
+  managerId   String?
+  isManagerApprover Boolean @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  company     Company  @relation(fields: [companyId], references: [id])
+  manager     User?    @relation("ManagerEmployee", fields: [managerId], references: [id])
+  employees   User[]   @relation("ManagerEmployee")
+  
+  submittedExpenses  Expense[]  @relation("ExpenseSubmitter")
+  approvalSteps      ApprovalStep[]
+  approvalActions    ApprovalAction[]
+}
+
+enum ExpenseStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  IN_REVIEW
+}
+
+model Expense {
+  id          String        @id @default(uuid())
+  amount      Float
+  currency    String
+  category    String
+  description String
+  date        DateTime
+  status      ExpenseStatus @default(PENDING)
+  
+  submitterId String
+  companyId   String
+  
+  receiptUrl  String?
+  ocrData     Json?
+  
+  currentApprovalStep Int @default(0)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  submitter   User     @relation("ExpenseSubmitter", fields: [submitterId], references: [id])
+  company     Company  @relation(fields: [companyId], references: [id])
+  
+  approvalSteps   ApprovalStep[]
+  approvalActions ApprovalAction[]
+}
+
+model ApprovalStep {
+  id          String   @id @default(uuid())
+  expenseId   String
+  approverId  String
+  sequence    Int
+  status      ExpenseStatus @default(PENDING)
+  isCompleted Boolean  @default(false)
+  
+  createdAt   DateTime @default(now())
+  
+  expense     Expense  @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  approver    User     @relation(fields: [approverId], references: [id])
+  
+  @@unique([expenseId, sequence])
+}
+
+model ApprovalAction {
+  id         String   @id @default(uuid())
+  expenseId  String
+  approverId String
+  action     String   // APPROVED, REJECTED
+  comments   String?
+  timestamp  DateTime @default(now())
+  
+  expense    Expense  @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  approver   User     @relation(fields: [approverId], references: [id])
+}
+
+enum RuleType {
+  PERCENTAGE
+  SPECIFIC_APPROVER
+  HYBRID
+}
+
+model ApprovalRule {
+  id          String   @id @default(uuid())
+  companyId   String
+  name        String
+  ruleType    RuleType
+  
+  // For percentage rule
+  percentageRequired Float?
+  
+  // For specific approver rule
+  specificApproverId String?
+  
+  // For defining multi-level approvers
+  approverSequence Json? // Array of {userId, sequence}
+  
+  amountThreshold Float?
+  isActive        Boolean @default(true)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  company     Company  @relation(fields: [companyId], references: [id])
+}

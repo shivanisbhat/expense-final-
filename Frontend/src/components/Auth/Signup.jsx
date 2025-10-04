@@ -3,7 +3,6 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import axios from 'axios';
 import React from 'react';
-
 export default function Signup() {
   const [formData, setFormData] = useState({
     firstName: '',
@@ -16,7 +15,6 @@ export default function Signup() {
   const [countries, setCountries] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [passwordError, setPasswordError] = useState('');
   const { signup } = useAuth();
   const navigate = useNavigate();
 
@@ -31,51 +29,12 @@ export default function Signup() {
       setCountries(sortedCountries);
     } catch (error) {
       console.error('Error fetching countries:', error);
-      // Add fallback countries if API fails
-      setCountries(['India', 'United States', 'United Kingdom', 'Canada', 'Australia']);
-    }
-  };
-
-  const validatePassword = (password) => {
-    // Backend requires: min 8 chars, at least 1 uppercase, 1 lowercase, 1 number
-    if (password.length < 8) {
-      return 'Password must be at least 8 characters';
-    }
-    if (!/[a-z]/.test(password)) {
-      return 'Password must contain at least one lowercase letter';
-    }
-    if (!/[A-Z]/.test(password)) {
-      return 'Password must contain at least one uppercase letter';
-    }
-    if (!/\d/.test(password)) {
-      return 'Password must contain at least one number';
-    }
-    return '';
-  };
-
-  const handlePasswordChange = (e) => {
-    const newPassword = e.target.value;
-    setFormData({ ...formData, password: newPassword });
-    
-    if (newPassword) {
-      const validationError = validatePassword(newPassword);
-      setPasswordError(validationError);
-    } else {
-      setPasswordError('');
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-
-    // Validate password before submission
-    const passError = validatePassword(formData.password);
-    if (passError) {
-      setPasswordError(passError);
-      return;
-    }
-
     setLoading(true);
 
     const result = await signup(formData);
@@ -115,8 +74,6 @@ export default function Signup() {
                 onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
-                minLength="2"
-                maxLength="50"
               />
             </div>
 
@@ -128,8 +85,6 @@ export default function Signup() {
                 onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
-                minLength="2"
-                maxLength="50"
               />
             </div>
           </div>
@@ -150,19 +105,11 @@ export default function Signup() {
             <input
               type="password"
               value={formData.password}
-              onChange={handlePasswordChange}
-              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                passwordError ? 'border-red-300' : 'border-gray-300'
-              }`}
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              minLength="6"
               required
-              minLength="8"
             />
-            {passwordError && (
-              <p className="text-red-600 text-xs mt-1">{passwordError}</p>
-            )}
-            <p className="text-gray-500 text-xs mt-1">
-              Must be 8+ characters with uppercase, lowercase, and number
-            </p>
           </div>
 
           <div>
@@ -173,8 +120,6 @@ export default function Signup() {
               onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               required
-              minLength="2"
-              maxLength="100"
             />
           </div>
 
@@ -195,8 +140,8 @@ export default function Signup() {
 
           <button
             type="submit"
-            disabled={loading || !!passwordError}
-            className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={loading}
+            className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition font-medium disabled:opacity-50"
           >
             {loading ? 'Creating Account...' : 'Create Account'}
           </button>

@@ -3,14 +3,13 @@ import { useState, useEffect } from 'react';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import React from 'react';
-
 export default function EmployeeDashboard() {
   const [expenses, setExpenses] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    title: '',
     amount: '',
+    currency: 'USD',
     category: '',
     description: '',
     date: new Date().toISOString().split('T')[0]
@@ -23,8 +22,8 @@ export default function EmployeeDashboard() {
 
   const fetchExpenses = async () => {
     try {
-      const response = await api.get('/expenses');
-      setExpenses(response.data.data || []);
+      const response = await api.get('/expenses/my-expenses');
+      setExpenses(response.data.expenses);
     } catch (error) {
       console.error('Error fetching expenses:', error);
     }
@@ -39,25 +38,24 @@ export default function EmployeeDashboard() {
       alert('Expense submitted successfully!');
       setShowForm(false);
       setFormData({
-        title: '',
         amount: '',
+        currency: 'USD',
         category: '',
         description: '',
         date: new Date().toISOString().split('T')[0]
       });
       fetchExpenses();
     } catch (error) {
-      alert('Error submitting expense: ' + (error.response?.data?.message || 'Unknown error'));
+      alert('Error submitting expense: ' + (error.response?.data?.error || 'Unknown error'));
     }
     setLoading(false);
   };
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'approved': return 'bg-green-100 text-green-800';
-      case 'rejected': return 'bg-red-100 text-red-800';
-      case 'processing': return 'bg-yellow-100 text-yellow-800';
-      case 'pending': return 'bg-blue-100 text-blue-800';
+      case 'APPROVED': return 'bg-green-100 text-green-800';
+      case 'REJECTED': return 'bg-red-100 text-red-800';
+      case 'IN_REVIEW': return 'bg-yellow-100 text-yellow-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -84,18 +82,6 @@ export default function EmployeeDashboard() {
         <div className="bg-white rounded-lg shadow-md p-6 mb-8">
           <h2 className="text-xl font-semibold mb-4">Submit New Expense</h2>
           <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
-            <div className="col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
-              <input
-                type="text"
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                required
-                minLength="3"
-              />
-            </div>
-
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Amount</label>
               <input
@@ -105,8 +91,22 @@ export default function EmployeeDashboard() {
                 onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 required
-                min="0.01"
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
+              <select
+                value={formData.currency}
+                onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="USD">USD</option>
+                <option value="EUR">EUR</option>
+                <option value="GBP">GBP</option>
+                <option value="INR">INR</option>
+                <option value="JPY">JPY</option>
+              </select>
             </div>
 
             <div>
@@ -118,16 +118,15 @@ export default function EmployeeDashboard() {
                 required
               >
                 <option value="">Select Category</option>
-                <option value="travel">Travel</option>
-                <option value="food">Food</option>
-                <option value="accommodation">Accommodation</option>
-                <option value="transportation">Transportation</option>
-                <option value="supplies">Supplies</option>
-                <option value="other">Other</option>
+                <option value="Travel">Travel</option>
+                <option value="Food">Food</option>
+                <option value="Accommodation">Accommodation</option>
+                <option value="Equipment">Equipment</option>
+                <option value="Other">Other</option>
               </select>
             </div>
 
-            <div className="col-span-2">
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
               <input
                 type="date"
@@ -145,6 +144,7 @@ export default function EmployeeDashboard() {
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 rows="3"
+                required
               />
             </div>
 
@@ -178,10 +178,10 @@ export default function EmployeeDashboard() {
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Title</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Level</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Approvers</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
@@ -194,7 +194,7 @@ export default function EmployeeDashboard() {
                       {expense.category}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-900">
-                      {expense.title}
+                      {expense.description}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {expense.amount} {expense.currency}
@@ -205,7 +205,18 @@ export default function EmployeeDashboard() {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600">
-                      {expense.currentApprovalLevel > 0 ? `Level ${expense.currentApprovalLevel}` : '-'}
+                      {expense.approvalSteps?.length > 0 ? (
+                        <div>
+                          {expense.approvalSteps.map((step, idx) => (
+                            <div key={step.id} className="text-xs">
+                              Step {idx + 1}: {step.approver.firstName} {step.approver.lastName}
+                              {step.isCompleted && ` (${step.status})`}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        'Auto-approved'
+                      )}
                     </td>
                   </tr>
                 ))}

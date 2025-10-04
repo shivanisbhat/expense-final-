@@ -2,7 +2,7 @@ import { createContext, useState, useContext, useEffect } from 'react';
 import api from '../services/api';
 import React from 'react';
 const AuthContext = createContext();
-
+import React from 'react';
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
