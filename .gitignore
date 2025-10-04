@@ -1,0 +1,10 @@
+﻿# Node modules
+node_modules/
+Frontend/node_modules/
+Backend/node_modules/
+# lockfiles
+package-lock.json
+# dotenv
+.env
+# prisma generated
+/generated/prisma
