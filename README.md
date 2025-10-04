@@ -525,5 +525,3 @@ Repository: [https://github.com/shivanisbhat/expense-final](https://github.com/s
 - React for the frontend library
 - Sequelize for ORM
 - Tailwind CSS for styling
- 
- 
